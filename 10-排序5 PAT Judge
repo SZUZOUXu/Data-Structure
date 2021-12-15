@@ -1,0 +1,153 @@
+#include<stdio.h>
+#include<stdlib.h>
+#define Max_Problem 5
+typedef struct Node* PtrToNode;
+struct Node {
+	int Key;
+	PtrToNode Next;
+};
+
+typedef struct HeadNode* Bucket;
+struct HeadNode {
+	PtrToNode Head, Tail;
+};
+
+typedef struct User* PtrToUser;
+struct User {
+	int Total;/*总分，-1表示未提交过或未过编译*/
+	int Score[Max_Problem];/*各题得分，-1表示提交但未通过编译，-2表示未提交*/
+	int PerfectNum;/*最佳提交题目数*/
+};
+int N, K, M;/*N:用户数，K:问题数，M:提交数*/
+int Mark[Max_Problem];
+PtrToUser A;
+
+void ReadData();
+void LSDRadixSort();
+
+int main()
+{
+	ReadData();
+	LSDRadixSort();
+	free(A);
+	return 0;
+}
+
+void ReadData()
+{
+	scanf("%d %d %d", &N, &K, &M);
+	int i, j;
+	for (i = 0;i < K;i++)/*输入问题的分值*/
+		scanf("%d", &Mark[i]);
+	/*初始化各用户的各题目得分为-2，总分为-1，即未提交状态*/
+	
+	A = (PtrToUser)malloc(N*sizeof(struct User));
+	for (i = 0;i < N;i++) {/*每人的所有题初始化为-2*/
+		for (j = 0;j < K;j++) {
+			A[i].Score[j] = -2;
+		}
+		A[i].PerfectNum = 0;
+		A[i].Total = -1;
+	}
+	/*输入提交数*/
+	int user_id, problem_id, partial_score;
+	for (i = 0;i < M;i++) {
+		scanf("%d %d %d", &user_id, &problem_id, &partial_score);
+		user_id--;problem_id--;/*从0开始好存储*/
+		/*存入A中*/
+		if (A[user_id].Score[problem_id] == -2)
+			/*更改该题目未提交的状态*/
+			A[user_id].Score[problem_id] = -1;
+		if (A[user_id].Score[problem_id] < partial_score) {
+			/*此时提交成功，此时partial_score>=0,未提交和编译不过的都不排名*/
+			if (A[user_id].Score[problem_id] == -1)/*以前都没过编译*/
+				A[user_id].Score[problem_id] = 0;
+			if (A[user_id].Total < 0)/*好歹过了，总分改成0*/
+				A[user_id].Total = 0;
+			A[user_id].Total += 
+				/*总分增加因为满足总分增加的条件才会进if*/
+				(partial_score - A[user_id].Score[problem_id]);
+			if (partial_score == Mark[problem_id]
+				&& A[user_id].Score[problem_id] != partial_score)
+				/*满分且之前不是满分*/
+				A[user_id].PerfectNum++;
+			A[user_id].Score[problem_id] = partial_score;/*更新*/
+		}
+	}
+}
+
+void LSDRadixSort()
+{
+	/*基数排序，次位优先*/
+	int i, j;
+	Bucket Perfect, Score;
+	PtrToNode tmp;
+	/*最佳答题数桶排序*/
+	/*0  1  2  3  4  5请选择你的最佳答题数*/
+	Perfect = (Bucket)malloc((K+1) * (sizeof(struct HeadNode)));
+	for (i = 0;i <= K;i++)
+		Perfect[i].Head = Perfect[i].Tail = NULL;
+	
+	for (i = 0;i < N;i++) {
+		if (A[i].Total < 0)/*总分<0,不排序*/
+			continue;
+		tmp= (PtrToNode)malloc(sizeof(struct Node));
+		tmp->Key = i;
+		tmp->Next = NULL;
+
+		if (Perfect[A[i].PerfectNum].Head == NULL)
+			Perfect[A[i].PerfectNum].Head = Perfect[A[i].PerfectNum].Tail = tmp;
+		else {
+			Perfect[A[i].PerfectNum].Tail->Next = tmp;
+			Perfect[A[i].PerfectNum].Tail = tmp;
+		}
+	}
+	
+	/*对总分排序*/
+	/*0  1  2  3  ...  Total 请选择你的总分*/
+	int total_score = 0;
+	for (i = 0;i < K;i++)
+		total_score += Mark[i];
+	Score = (Bucket)malloc((total_score + 1) * sizeof(struct HeadNode));
+	for (i = 0;i <= total_score;i++)
+		Score[i].Head = Score[i].Tail = NULL;
+	for (i = K;i >= 0;i--) {/*反向，因为Perfect[i]越大，先进，排名就越高*/
+		while (Perfect[i].Head) {/*对于有总分>=0,进过Perfect的*/
+			tmp = Perfect[i].Head;
+			Perfect[i].Head = Perfect[i].Head->Next;
+			tmp->Next = NULL;
+
+			if (Score[A[tmp->Key].Total].Head == NULL)
+				Score[A[tmp->Key].Total].Head = Score[A[tmp->Key].Total].Tail = tmp;
+			else {
+				Score[A[tmp->Key].Total].Tail->Next = tmp;
+				Score[A[tmp->Key].Total].Tail = tmp;
+			}
+		}
+	}
+	/*输出结果*/
+	int rank = 1;
+	int  parallel_num;
+	for (i = total_score;i >= 0;i--) {
+		parallel_num = 0;/*同名次的人数*/
+		while (Score[i].Head) {
+			tmp = Score[i].Head;
+			Score[i].Head = Score[i].Head->Next;
+			printf("%d %05d %d", rank, tmp->Key + 1, A[tmp->Key].Total);
+			for (j = 0;j < K;j++) {/*对于tmp->Key编号的选手*/
+				if (A[tmp->Key].Score[j] == -2)
+					printf(" -");/*没有答过题*/
+				else if (A[tmp->Key].Score[j] == -1)
+					printf(" 0");/*未过编译*/
+				else
+					printf(" %d", A[tmp->Key].Score[j]);
+			}
+			printf("\n");
+			free(tmp);
+			parallel_num++;
+		}
+		rank += parallel_num;
+	}
+	free(Perfect);
+	free(Score);
+}
