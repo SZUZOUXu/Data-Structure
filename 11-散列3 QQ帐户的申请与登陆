@@ -1,0 +1,180 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
+#include <stdbool.h>
+
+#define QQSMALLEST 4
+#define QQLENGTH 10
+#define PWLENGTH 16
+#define MAXD 5
+#define MAXTABLESIZE 1000000
+
+#define NOTFOUND -1
+
+typedef struct UserInfoNode UserInfo;
+struct UserInfoNode {
+    char qq[QQLENGTH + 1];
+    char password[PWLENGTH + 1];
+};
+
+typedef UserInfo ElementType;
+typedef int Index;
+
+typedef struct LNode* PtrToLNode;
+struct LNode {
+    ElementType Data;
+    PtrToLNode Next;
+};
+typedef PtrToLNode Position;
+
+
+typedef struct TblNode* HashTable;
+struct TblNode {
+    int TableSize;
+    Position Heads;
+};
+
+int NextPrime(int N);   // 返回大于N且不超过MAXTABLESIZE的最小素数
+int Hash(char* Key, int p);
+
+HashTable CreateTable(int TableSize);
+Position Find(HashTable H, ElementType Key);
+bool Insert(HashTable H, ElementType Key);
+void DestoryTable(HashTable H);
+void HandleInput();
+void HashTableCheck(HashTable H, char flag, UserInfo* info);
+void HashTableHandle(int N);
+
+int main()
+{
+    HandleInput();
+
+    return 0;
+}
+
+int NextPrime(int N)
+{
+    int i, p;
+
+    if (N < 2) return 2;
+    else p = (N % 2) ? N + 2 : N + 1; /*从大于N的下一个奇数开始 */
+    while (p <= MAXTABLESIZE) {
+        for (i = (int)sqrt(p); i > 1; i--)
+            if (!(p % i)) break; /* p不是素数 */
+        if (i == 1) break; /* for正常结束，说明p是素数 */
+        else  p += 2; /* 否则试探下一个奇数 */
+    }
+    return p;
+}
+
+int Hash(char* Key, int P)
+{
+    int tmp;
+    if (strlen(Key) == QQSMALLEST)
+        tmp = atoi(Key);
+    else
+        tmp = atoi(Key + strlen(Key) - MAXD);
+    return tmp % P;
+}
+
+HashTable CreateTable(int TableSize)
+{
+    HashTable H;
+    int i;
+    H = (HashTable)malloc(sizeof(struct TblNode));
+    H->TableSize = NextPrime(TableSize);
+    H->Heads = (Position)malloc(H->TableSize * sizeof(struct LNode));
+    for (i = 0; i < H->TableSize; ++i) {
+        H->Heads[i].Next = NULL;
+    }
+    return H;
+}
+
+Position Find(HashTable H, ElementType Key)
+{
+    Position P;
+    Index Pos;
+
+    Pos = Hash(Key.qq, H->TableSize);
+
+    P = H->Heads[Pos].Next;
+    while (P && strcmp(P->Data.qq, Key.qq))
+        P = P->Next;
+    return P;
+}
+
+bool Insert(HashTable H, ElementType Key)
+{
+    Position P, NewCell;
+    Index Pos;
+
+    P = Find(H, Key);
+    if (!P) {
+        NewCell = (Position)malloc(sizeof(struct LNode));
+        strcpy(NewCell->Data.qq, Key.qq);
+        strcpy(NewCell->Data.password, Key.password);
+        Pos = Hash(Key.qq, H->TableSize);
+        NewCell->Next = H->Heads[Pos].Next;
+        H->Heads[Pos].Next = NewCell;
+        return true;
+    }
+    else
+        return false;
+}
+
+void DestoryTable(HashTable H)
+{
+    int i;
+    Position P, Tmp;
+
+    for (i = 0; i < H->TableSize; ++i) {
+        P = H->Heads[i].Next;
+        while (P) {
+            Tmp = P->Next;
+            free(P);
+            P = Tmp;
+        }
+    }
+    free(H->Heads);
+    free(H);
+}
+void HashTableCheck(HashTable H, char flag, UserInfo* info)
+{
+    Position pos;
+    if (flag == 'N') {
+        if (Insert(H, *info)) printf("New: OK");
+        else printf("ERROR: Exist");
+    }
+    else {
+        pos = Find(H, *info);
+        if (pos) {
+            if (strcmp(info->password, pos->Data.password))
+                printf("ERROR: Wrong PW");
+            else printf("Login: OK");
+        }
+        else printf("ERROR: Not Exist");
+    }
+    printf("\n");
+}
+
+void HandleInput()
+{
+    int N;
+    scanf("%d", &N);
+    HashTableHandle(N);
+}
+
+void HashTableHandle(int N)
+{
+    int i; char flag;
+    UserInfo info;
+    HashTable H;
+
+    H = CreateTable(N);
+    for (i = 0; i < N; ++i) {
+        scanf("\n%c %s %s", &flag, info.qq , info.password);
+        HashTableCheck(H, flag, &info);
+    }
+    DestoryTable(H);
+}
