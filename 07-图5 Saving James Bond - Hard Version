@@ -1,0 +1,158 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<math.h>
+#define MaxSize 100
+#define INFINTY 65535
+typedef struct Position Point;
+struct Position {
+	int x;
+	int y;
+};
+Point points[MaxSize];
+
+typedef struct QNode* Queue;
+struct QNode {
+	int* Data;/*存储元素的数组*/
+	int front, rear;
+};
+
+int dist[MaxSize];/*路径长度*/
+int path[MaxSize];/*下一个结点*/
+Queue CreateQueue();
+void Enqueue(Queue Q, int X);
+int Dequeue(Queue Q);
+void ReadPoint(int N);
+void BFS(int N, int D);
+int CanEscape(Point P, int D);
+void PrintPath(int ans);
+int Jump(Point p1, Point p2, int dis);
+void DestoryQueue(Queue Q);
+int Distance(Point p1, Point p2);
+
+int main()
+{
+	int N, D;
+	scanf("%d %d", &N, &D);
+
+	ReadPoint(N);
+	BFS(N, D);
+
+	return 0;
+}
+
+void ReadPoint(int N)
+{
+	int i;
+	for (i = 0; i < N; ++i) {
+		scanf("%d %d", &(points[i].x), &(points[i].y));
+	}
+}
+void BFS(int N, int D)
+{
+	int i, cur_dis, pIndex, ans;
+	Queue Q;
+	Point center;
+	center.x = 0; center.y = 0;
+
+	if (CanEscape(center, D + 7.5)) {// 如果从岛上就能直接跳上岸
+		printf("1\n");
+		return;
+	}
+
+	for (i = 0; i < N; ++i) {// 初始化辅助数组
+		dist[i] = INFINTY;
+		path[i] = -1;
+	}
+	Q = CreateQueue();
+
+	for (i = 0; i < N; ++i) {
+		if (CanEscape(points[i], D)) {// 将所有能上岸的入队
+			dist[i] = 1;
+			Enqueue(Q, i);
+		}
+	}
+
+	ans = -1;/*用于存储最后一次跳跃的尾结点*/
+	while (Q->front != Q->rear) {
+		pIndex = Dequeue(Q);/*从队列里取出一个元素*/
+		
+		if (Jump(center, points[pIndex], D + 7.5)) {
+			/*从岛上可以之间跳到这个结点*/
+			if (ans == -1 || Distance(center, points[pIndex]) 
+				< Distance(center, points[ans]))/*可以更短*/
+				ans = pIndex;/*更新可以从岛上直接跳到的结点*/
+		}
+		else {
+			for (i = 0; i < N; ++i) {
+				if (Jump(points[pIndex], points[i], D) 
+					&& (dist[pIndex] + 1 < dist[i])) {
+					/*遍历该pIndex结点，能够从pIndex跳跃到且路径更短*/
+					dist[i] = dist[pIndex] + 1;
+					path[i] = pIndex;
+					Enqueue(Q, i);/*入队*/
+				}
+			}
+		}
+
+	}
+	if (ans == -1) printf("0\n");
+	else 
+		PrintPath(ans);
+	DestoryQueue(Q);
+}
+Queue CreateQueue()
+{
+	Queue Q = (Queue)malloc(sizeof(struct QNode));
+	Q->front = Q->rear = -1;
+	Q->Data = (int*)malloc(MaxSize * sizeof(int));
+
+	return Q;
+}
+void Enqueue(Queue Q, int X)
+{
+	if ((Q->rear + 1) % MaxSize == Q->front) /*满队列*/
+		return;
+	else {
+		Q->rear = (Q->rear + 1) % MaxSize;
+		Q->Data[Q->rear] = X;
+	}
+}
+int Dequeue(Queue Q)
+{
+	if (Q->front == Q->rear)/*空队列*/
+		return -1;
+	else {
+		Q->front = (Q->front + 1) % MaxSize;
+		return  Q->Data[Q->front];
+	}
+}
+void DestoryQueue(Queue Q)
+{
+	if (Q->Data) free(Q->Data);
+	free(Q);
+}
+int CanEscape(Point P, int D)
+{
+	if ((abs(P.x) + D) >= 50 || (abs(P.y) + D) >= 50)
+		return 1;
+	else
+		return 0;
+}
+
+void PrintPath(int ans)
+{
+	printf("%d\n", dist[ans] + 1);/*还有跳到岛上的那一次*/
+	for (; ans != -1; ans = path[ans]) {
+		printf("%d %d\n", points[ans].x, points[ans].y);
+	}
+}
+
+int Jump(Point p1, Point p2, int D)
+{
+	/*p1到p2直接的距离能够跳跃*/
+	return Distance(p1, p2) <= D * D;
+}
+int Distance(Point p1, Point p2)
+{
+	return (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y);
+}
