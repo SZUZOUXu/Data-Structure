@@ -1,0 +1,90 @@
+#include<stdio.h>
+#include<stdlib.h>
+#define MaxSize 100001
+struct node {
+	int data;
+	int next;
+};
+struct node array[MaxSize];
+typedef struct node* List;
+int input(struct node array[],int* k);/*输入并返回头结点地址*/
+int count(struct node array[],int head);/*计算有效结点个数,输入头结点*/
+void print(struct node array[],int head);/*打印链表*/
+int reverse(struct node array[], int* head, int k);/*逆转链表*/
+
+int head,k;
+int main()
+{
+	head = input(array,&k);
+	reverse(array, &head, k);
+	print(array,head);
+	return 0;
+}
+
+int input(struct node array[],int *k)
+{
+	int head, n;
+	int index,data,next;
+	scanf("%d %d %d", &head, &n, k);
+	while (n--) {
+		scanf("%d %d %d", &index, &data, &next);
+		array[index].data = data;
+		array[index].next = next;
+	}
+	return head;
+}
+
+int count(struct node array[],int head)
+{
+	int sum, i = head;/*i记录地址*/
+	sum = 1;
+	while (array[i].next != -1) {
+		sum++;
+		i = array[i].next;
+	}
+	return sum;
+}
+
+void print(struct node array[],int head)
+{
+	int i = head;
+	while (array[i].next != -1) {
+		printf("%05d %d %05d\n", i, array[i].data, array[i].next);
+		i = array[i].next;
+	}/*此时到了最后一项，即next==-1的情况*/
+	printf("%05d %d %d\n", i, array[i].data, array[i].next);
+}
+
+int reverse(struct node array[], int *head, int k)
+{/*要更改头的地址,因此是*head */
+	int cnt = count(array, *head);
+	if (k == 1)
+		return -1;/*不用逆转链表*/
+	
+	int i, ptr1, ptr2, ptr3;
+	int firstflag = 0, nexthead = *head, lastend = -2;
+	while (cnt >= k) {/*此时还需要逆转链表*/
+		ptr1 = nexthead;
+		ptr2 = array[ptr1].next;
+		for (i = 1;i < k;i++) {
+			ptr3 = array[ptr2].next;/*存储临时变量*/
+			array[ptr2].next = ptr1;/*至此完成了一次的逆转*/
+			ptr1 = ptr2;/*下一次的逆转*/
+			ptr2 = ptr3;
+		}
+		/*头结点的next值修改为最后一个结点的next值*/
+		array[nexthead].next = ptr2;
+		if (firstflag == 0) {
+			
+			lastend = nexthead;/*上一次翻转结束的地址*/
+			*head = ptr1;/*更新头结点*/
+		}
+		else {
+			array[lastend].next = ptr1;/*上一次翻转最后的Address*/
+			lastend = nexthead;/*上一次翻转结束的地址*/
+		}
+		firstflag++;
+		nexthead = ptr2;
+		cnt -= k;
+	}
+}
