@@ -1,0 +1,80 @@
+#include<stdio.h>
+#include<stdlib.h>
+#define MaxSize 100000
+#define Radix 51
+typedef struct Node* PtrToNode;
+struct Node {
+	int Data;
+	PtrToNode Next;
+};
+
+struct HeadNode {
+	PtrToNode Head, Tail;
+	int count;
+};
+typedef struct HeadNode Bucket[Radix];
+int A[MaxSize];
+void Bucket_Sort(int A[], int N);
+
+int main()
+{
+	int N, i;
+	scanf("%d", &N);
+	for (i = 0;i < N;i++)
+		scanf("%d", &A[i]);
+
+	Bucket_Sort(A, N);
+
+	return 0;
+}
+
+void Bucket_Sort(int A[], int N)
+{
+	/*初始化B[]*/
+	int i;
+	PtrToNode tmp;
+	Bucket B;
+	for (i = 0;i < Radix;i++) {
+		B[i].Head = B[i].Tail = NULL;
+		B[i].count = 0;
+	}
+	/*读入B[i]链表*/
+	for (i = 0;i < N;i++) {
+		tmp = (PtrToNode)malloc(sizeof(struct Node));
+		tmp->Data=A[i];
+		tmp->Next = NULL;
+		if (B[A[i]].Head == NULL) {
+			B[A[i]].Head = B[A[i]].Tail = tmp;
+			B[A[i]].count++;
+		}
+		else {
+			B[A[i]].Tail->Next = tmp;
+			B[A[i]].Tail = tmp;
+			B[A[i]].count++;
+		}
+	}
+	for (i = 0;i < Radix;i++) {
+		if (B[i].Head)
+			printf("%d:%d\n", i, B[i].count);
+	}
+	/*以下为了将结果输入A[]，于程序无用*/
+	/*用List按顺序收集元素*/
+	PtrToNode List;
+	List = NULL;
+	for (i = Radix - 1;i >= 0;i--) {
+		if (B[i].Head) {/*桶不为空*/
+		/*将真个桶插在List上*/
+			B[i].Tail->Next = List;
+			List = B[i].Head;
+			B[i].Tail = B[i].Head = NULL;
+		}
+	}
+	/*将List倒入A[]*/
+	int count;
+	for (i = 0;i < N;i++) {
+		tmp = List;
+		List = List->Next;
+		A[i] = tmp->Data;
+		free(tmp);
+	}
+}
