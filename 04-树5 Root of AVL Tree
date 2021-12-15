@@ -1,0 +1,128 @@
+#include<stdio.h>
+#include<stdlib.h>
+typedef struct TreeNode* BinTree;
+struct TreeNode {
+	BinTree left, right;
+	int data;
+	int height;
+};
+BinTree MakeTree(int V);
+BinTree Insert(BinTree T, int V);
+int GetHeight(BinTree T);
+BinTree SingleLeftRotation(BinTree T);
+BinTree DoubleLeftRightRotation(BinTree T);
+BinTree DoubleRightLeftRotation(BinTree T);
+BinTree SingleRightRotation(BinTree T);
+int Max(int a, int b);
+
+int main()
+{
+	int N, i,V;
+	BinTree T=NULL;
+	scanf("%d", &N);
+	for (i = 0;i < N;i++) {
+		scanf("%d", &V);
+		T = Insert(T, V);/*时刻更新新根结点*/
+	}
+	printf("%d\n", T->data);
+	return 0;
+}
+
+BinTree MakeTree(int V)
+{
+	BinTree T = (BinTree)malloc(sizeof (struct TreeNode));
+	T->data = V;
+	T->left = T->right = NULL;
+	T->height = 0;
+	return T;
+}
+
+BinTree Insert(BinTree T, int V)
+{
+	if (!T)/*若为空，在该位置新建结点*/
+		T = MakeTree(V);
+	else if (V < T->data) {
+		T->left = Insert(T->left, V);/*左子树*/
+		/*关键点在于直接在插入的时候找到被破坏的结点,此时T是被破坏结点*/
+		if (GetHeight(T->left) - GetHeight(T->right) == 2) {
+			if (V < T->left->data)
+				T = SingleLeftRotation(T);/*L-L旋转*/
+			else
+				T = DoubleLeftRightRotation(T);/*L-R旋转*/
+		}
+		
+	}
+		
+	else if (V > T->data) {
+		T->right = Insert(T->right, V);/*右子树*/
+		/*关键点在于直接在插入的时候找到被破坏的结点,此时T是被破坏结点*/
+		if (GetHeight(T->right) - GetHeight(T->left) == 2) {
+			if (V > T->right->data)
+				T = SingleRightRotation(T);/*R-R旋转*/
+			else
+				T = DoubleRightLeftRotation(T);/*R-L旋转*/
+		}
+		
+	}
+	T->height = Max(GetHeight(T->left), GetHeight(T->right)) + 1;
+	return T;
+}
+
+int GetHeight(BinTree T)
+{
+	if (!T)
+		return -1;
+	else return T->height;
+}
+
+BinTree SingleLeftRotation(BinTree T)
+{
+	/*L-L旋转*/
+	BinTree B = T->left;
+	T->left = B->right;
+	B->right = T;
+	/*改变的结点height也变了*/
+	T->height = Max(GetHeight(T->left), GetHeight(T->right)) + 1;
+	B->height = Max(GetHeight(B->left), T->height) + 1;
+	return B;
+}
+
+BinTree DoubleLeftRightRotation(BinTree T)
+{
+    /* 将A与C做左单旋，C被返回 */
+    /*
+	T->left = SingleRightRotation(T->left);
+	return SingleLeftRotation(T);*/
+    BinTree B = T->left;
+	BinTree C = B->right;
+	B->right = C->left;
+	T->left = C->right;
+	C->left = B;
+	C->right = T;
+	B->height= Max(GetHeight(B->left), GetHeight(B->right)) + 1;
+	T->height = Max(GetHeight(T->left), GetHeight(T->right)) + 1;
+	C->height = Max(GetHeight(C->left), GetHeight(C->right)) + 1;
+	return C;
+}
+
+BinTree SingleRightRotation(BinTree T)
+{
+	BinTree B = T->right;
+	T->right = B->left;
+	B->left = T;
+	T->height = Max(GetHeight(T->left), GetHeight(T->right)) + 1;
+	B->height = Max(GetHeight(B->left), T->height) + 1;
+	return B;
+}
+
+BinTree DoubleRightLeftRotation(BinTree T)
+{
+	/*先B、C做左单旋，再A、C做右单旋*/
+	T->right = SingleLeftRotation(T->right);
+	return SingleRightRotation(T);
+}
+
+int Max(int a, int b)
+{
+	return a > b ? a : b;
+}
