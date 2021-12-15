@@ -1,0 +1,86 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<math.h>
+
+#define MaxSize 10001
+int G[MaxSize][MaxSize];/*图*/
+int N, M;
+int Visited[MaxSize] = { 0 };/*判断是否经过结点*/
+void Isinvisited();
+int BFS(int v);
+
+int main()
+{
+	int v1, v2;
+	scanf("%d %d", &N, &M);
+    /*初始化图*/
+    for (int i = 0; i < M; i++)
+    {
+        scanf("%d %d", &v1, &v2);
+        v1--;
+        v2--;
+        G[v1][v2] = 1;
+        G[v2][v1] = 1;
+    }
+    int v;
+    int count;
+    double ratio;
+    /*遍历N个结点*/
+    for (v = 0; v < N; v++)
+    {
+        Isinvisited();/*将Visited重置*/
+        count = BFS(v);
+        ratio = count * 1.0 / N * 100;
+        printf("%d: %.2lf%%\n", v + 1, ratio);//%%才能输出百分号 
+    }
+    
+    return 0;
+}
+void Isinvisited()
+{
+    int i;
+    for (i = 0; i < N; i++) {
+        Visited[i] = 0;
+    }
+}
+
+int BFS(int v)/*队列实现的BFS*/
+{
+    const int MAXNUM = 10002;
+    int queue[MaxSize];/*初始化队列*/
+
+    int first = -1, rear = -1;
+    int count, level, last, tail;
+
+    Visited[v] = 1;
+    count = 1;//这个节点有多少人 
+    level = 0;//层数
+    last = v;//这一层访问的最后一个节点 
+    queue[++rear] = v;//入队 
+
+    while (first < rear) //队列不为空
+    {
+        int de = queue[++first];//出队
+        for (int i = 0;i < N;i++) {
+            /*遍历行*/
+            if (G[de][i] && !Visited[i])/*该结点未访问过*/
+            {
+                Visited[i] = 1;
+                queue[++rear] = i;/*入队*/
+                count++;
+                /*该行的最后一个点,也就是以de为圆心的外层的最后一个结点*/
+                tail = i;
+            }    
+        }
+        if (de == last)/*当前元素与该层最后一个元素一致*/
+        {
+            level++;
+            last = tail;/*更新last*/
+        }
+        if (level == 6)/*6层的BFS*/
+        {
+            break;
+        }
+    }
+    return count;
+}
