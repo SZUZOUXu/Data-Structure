@@ -1,0 +1,37 @@
+#include<stdio.h>
+#define MaxSize 1001
+int H[MaxSize], size;
+void Insert(int x);
+int main()
+{
+	int N, M, i, x, y;
+	scanf("%d %d", &N, &M);
+	H[0] = -10001;
+	size = 0;
+	for (i = 0;i < N;i++) {
+		scanf("%d", &x);
+		Insert(x);
+	}
+	for (i = 0;i < M;i++) {
+		scanf("%d", &y);
+		while (y>=1) {
+			if (y / 2 == 0)
+				printf("%d\n", H[y]);
+			else printf("%d ", H[y]);
+			y = y / 2;
+		}
+	}
+	return 0;
+}
+void Insert(int x)
+{
+	if (size == MaxSize) {
+		printf("最小堆满\n");
+		return;
+	}
+	int i;
+	for (i = ++size;x < H[i / 2];i = i / 2) {
+		H[i] = H[i / 2];
+	}
+	H[i] = x;
+}
