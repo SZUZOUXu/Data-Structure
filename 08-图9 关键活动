@@ -1,0 +1,241 @@
+#include<stdio.h>
+#include<stdlib.h>
+#define MaxSize 200
+#define INF 65535
+/*结点*/
+typedef struct AdjNode* Adj;
+struct AdjNode {
+	int Adj;
+	int time;
+	Adj Next;
+};
+/*邻接表*/
+typedef struct VNode {
+	Adj FirstNode;
+	Adj BackNode;
+}AdjList[MaxSize];
+
+/*图*/
+typedef struct GNode* LGraph;
+struct GNode {
+	int Nv;
+	int Ne;
+	AdjList G;
+};
+/*边*/
+typedef struct ENode* Edge;
+struct ENode {
+	int V1, V2;
+	int Weight;
+};
+/*队列*/
+typedef struct QNode* Queue;
+struct QNode {
+	int Front, Rear;
+	int Data[MaxSize];
+};
+LGraph CreateGraph(int VertexNum);
+LGraph BuildGraph();
+void InsertGraph(LGraph Graph, Edge E);
+
+Queue CreateQueue();
+int DeQueue(Queue Q);
+void AddQueue(Queue Q, int X);
+int TopSort(LGraph Graph);
+void FindPath(LGraph Graph, int FinalTime);
+
+int Indegree[MaxSize];/*顶点的入度*/
+int Outdegree[MaxSize];/*顶点的出度*/
+int Earliest[MaxSize];/*存储最早的工期*/
+int Latest[MaxSize];/*存储最晚的工期*/
+
+int main()
+{
+	int ans;
+	LGraph Graph;
+	Graph = BuildGraph();
+	ans = TopSort(Graph);
+	if (ans != -1) {
+		printf("%d\n", ans);
+		FindPath(Graph, ans);
+	}
+	else
+		printf("0");
+
+	return 0;
+}
+LGraph CreateGraph(int VertexNum)
+{
+	int V;
+	LGraph Graph;
+
+	Graph = (LGraph)malloc(sizeof(struct GNode));
+	Graph->Nv = VertexNum;
+	Graph->Ne = 0;
+
+	for (V = 0; V < Graph->Nv; V++) {
+		Graph->G[V].FirstNode = NULL;
+		Graph->G[V].BackNode = NULL;
+	}
+		
+
+	return Graph;
+}
+
+LGraph BuildGraph()
+{
+	LGraph Graph;
+	Edge E;
+
+	int VertexNum, i;
+	scanf("%d", &VertexNum);
+	Graph = CreateGraph(VertexNum);
+	scanf("%d", &Graph->Ne);
+
+	for (i = 0;i < Graph->Ne;i++) {
+		E = (Edge)malloc(sizeof(struct ENode));
+		scanf("%d %d %d", &E->V1, &E->V2, &E->Weight);
+		InsertGraph(Graph, E);
+	}
+	return Graph;
+}
+
+void InsertGraph(LGraph Graph, Edge E)
+{
+	Adj NewNode1,NewNode2;
+	NewNode1 = (Adj)malloc(sizeof(struct AdjNode));
+	E->V1--;E->V2--;
+	NewNode1->Adj = E->V2;
+	NewNode1->time = E->Weight;
+	NewNode1->Next = Graph->G[E->V1].FirstNode;
+	Graph->G[E->V1].FirstNode = NewNode1;
+
+	NewNode2 = (Adj)malloc(sizeof(struct AdjNode));
+	NewNode2->Adj = E->V1;
+	NewNode2->time = E->Weight;
+	NewNode2->Next = Graph->G[E->V2].BackNode;
+	Graph->G[E->V2].BackNode = NewNode2;
+}
+
+Queue CreateQueue()
+{
+	Queue Q;
+	Q = (Queue)malloc(sizeof(struct QNode));
+
+	Q->Front = Q->Rear = -1;
+
+	return Q;
+}
+
+int DeQueue(Queue Q)
+{
+	/*出队*/
+	if (Q->Rear == Q->Front)/*队空*/
+		return -1;
+	Q->Front = (Q->Front + 1) % MaxSize;
+
+	return Q->Data[Q->Front];/*返回被删除的元素*/
+}
+
+void AddQueue(Queue Q, int X)
+{
+	if ((Q->Rear + 1) % MaxSize == Q->Front)/*队满*/
+		return;
+	Q->Rear = (Q->Rear + 1) % MaxSize;
+	Q->Data[Q->Rear] = X;
+
+}
+
+int TopSort(LGraph Graph)
+{
+	int V;
+	Adj W;
+	Queue Q;
+	Q = CreateQueue();
+	/*初始化Indegree[]*/
+	for (V = 0;V < Graph->Nv;V++) {
+		Indegree[V] = 0;
+	}
+	/*遍历图，得到Indegree[]*/
+	for (V = 0;V < Graph->Nv;V++)
+		for (W = Graph->G[V].FirstNode;W;W = W->Next) {
+			Indegree[W->Adj]++;
+		}
+	/* 将所有入度为0的顶点入列 */
+	for (V = 0; V < Graph->Nv; V++) {
+		if (Indegree[V] == 0) {
+			AddQueue(Q, V);
+			Earliest[V] = 0;
+		}
+	}
+	/* 下面进入拓扑排序 */
+	int cnt = 0;
+	int FinalTime = -1;
+	while (Q->Rear != Q->Front) {
+		V = DeQueue(Q);/*出队*/
+		/* 对V的每个邻接点W->Adj */
+		cnt++;
+		for (W = Graph->G[V].FirstNode; W; W = W->Next) {
+			if (Earliest[V] + W->time > Earliest[W->Adj])/*更新时间*/
+				Earliest[W->Adj] = Earliest[V] + W->time;
+			if (--Indegree[W->Adj] == 0)
+				/* 若删除V使得W->AdjV入度为0 */
+				AddQueue(Q, W->Adj); /* 则该顶点入列 */
+			if (Earliest[W->Adj] > FinalTime)
+				FinalTime = Earliest[W->Adj];
+		}
+	}
+	if (cnt != Graph->Nv)
+		FinalTime = -1;
+
+	return FinalTime;
+}
+
+void FindPath(LGraph Graph, int FinalTime)
+{
+	int V, Final;
+	int count = 0;
+	Adj W;
+	Final = Graph->Nv;Final--;
+	
+	/*初始化Outdegree[]*/
+	for (V = 0;V < Graph->Nv;V++) {
+		Outdegree[V] = 0;
+	}
+	/*遍历图，得到Outdegree[]*/
+	for (V = 0;V < Graph->Nv;V++)
+		for (W = Graph->G[V].FirstNode;W;W = W->Next) {
+			Outdegree[V]++;
+		}
+	/*初始化Latest[]数组*/
+	for (V = 0;V < Graph->Nv;V++) {
+		Latest[V] = INF;
+	}
+	Queue Q;
+	Q = CreateQueue();
+	for (V = 0;V < Graph->Nv;V++) {
+		if (Outdegree[V] == 0) {/*出度为0的结点*/
+			Latest[V] = FinalTime;
+			AddQueue(Q, V);
+		}
+	}
+
+	while (Q->Front != Q->Rear) {
+		V = DeQueue(Q);
+		for (W = Graph->G[V].BackNode; W; W = W->Next) {
+			if (Latest[V] - W->time < Latest[W->Adj])/*更新时间*/
+				Latest[W->Adj] = Latest[V] - W->time;
+			if (--Outdegree[W->Adj] == 0)
+				/* 若删除V使得W->Adj出度为0 */
+				AddQueue(Q, W->Adj); /* 则该顶点入列 */
+		}
+	}
+	
+	for (V = 0;V < Graph->Nv;V++) {
+		for (W = Graph->G[V].FirstNode; W; W = W->Next) {
+			if ((Latest[W->Adj] - Earliest[V] - W->time) == 0) {
+				printf("%d->%d\n", V + 1, (W->Adj + 1));
+			}
+		}
+	}
+}
