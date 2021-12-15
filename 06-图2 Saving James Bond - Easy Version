@@ -1,0 +1,86 @@
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#define MaxVertexNum 101    /* 最大顶点数设为101 */
+ 
+int N,D;//鳄鱼数，跳跃距离 
+struct Crocodile{		
+    int x;
+    int y;
+}cro[MaxVertexNum];//存储鳄鱼坐标的数据结构
+ 	
+int Visited[MaxVertexNum]={0};
+//判断当前鳄鱼是否访问过（全局变量或static变量在未初始化时为0，局部变量为分配的内存中遗留的数据）
+ 
+int flag=0;		//存储结果，是否能逃脱 
+ 
+double Distance(int i, int j)
+{
+	double len;
+	len = sqrt(pow(cro[i].x - cro[j].x, 2) + pow(cro[i].y - cro[j].y, 2));
+
+	return len;
+}
+ 
+int CanEscape(int i)
+{
+	/*若我满足于比50-D还大，就可以跑*/
+	if (abs(cro[i].x >= 50 - D) || abs(cro[i].y >= 50 - D))
+		return 1;
+	else
+		return 0;
+}
+ 
+int DFS(struct Crocodile cro[],int V,int Visited[])//深度搜索 
+{
+	Visited[V] = 1;/*访问过该结点*/
+	
+	if (CanEscape(V)) {
+		/*能逃跑就退出DFS循环*/
+		flag = 1;
+	}
+	else {
+		for (int i = 1;i <= N;i++)
+		{
+			if ((Visited[i] == 0) && (Distance(V, i) <= D))//当没有访问过且能跳过去 
+			{
+				flag = DFS(cro, i,Visited);
+			}
+		}
+	}
+	return flag;			
+}
+ 
+int main()
+{
+    int i;
+	scanf("%d %d", &N, &D);
+	
+	cro[0].x = cro[0].y = 0;	//下标为0的结点为小岛 
+    Visited[0] = 1;
+	for( i=1;i<=N;i++)//输入鳄鱼坐标 
+	{
+		scanf("%d %d",&cro[i].x,&cro[i].y);
+	}
+	
+	
+	for( i=1;i<=N;i++)
+	{
+ 
+		if(Distance(0,i)<=(D+7.5))//从小岛跳到鳄鱼上 
+		{
+			flag=DFS(cro,i,Visited);
+			if(flag)
+			{
+				printf("Yes");
+				break;
+			} 
+		}
+	}
+	if(!flag)
+	{
+		printf("No");
+	}
+	
+	return 0;
+}
