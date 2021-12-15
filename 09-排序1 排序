@@ -1,0 +1,73 @@
+#include<stdio.h>
+#include<stdlib.h>
+#define MaxSize 100000
+
+void Merge2(int A[], int TmpA[], int L, int R, int RightEnd);
+void MPass(int A[], int TmpA[], int L, int Right);
+void Merge2_Sort(int A[], int N);/*递归实现*/
+
+int main()
+{
+	int N, i;
+	int A[MaxSize];
+	scanf("%d", &N);
+	for (i = 0;i < N;i++) {
+		scanf("%d", &A[i]);
+	}
+	Merge2_Sort(A, N);
+	for (i = 0;i < N;i++) {
+		if (i == 0)
+			printf("%d", A[i]);
+		else
+			printf(" %d", A[i]);
+	}
+	return 0;
+}
+
+void Merge2(int A[], int TmpA[], int L, int R, int RightEnd)
+{
+	/*有序子列的合并*/
+	int LeftEnd = R - 1;
+	int Tmp = L;
+	int NumElements = RightEnd - L + 1;
+	while (L <= LeftEnd && R <= RightEnd) {
+		if (A[L] <= A[R])
+			TmpA[Tmp++] = A[L++];
+		else
+			TmpA[Tmp++] = A[R++];
+	}
+	while (L <= LeftEnd)
+		TmpA[Tmp++] = A[L++];
+	while (R <= RightEnd)
+		TmpA[Tmp++] = A[R++];
+
+}
+
+void MPass(int A[], int TmpA[], int N, int length)
+{
+	int i, j;
+	for (i = 0;i <= N - 2 * length;i += 2 * length)
+		Merge2(A, TmpA, i, i + length, i + 2 * length - 1);
+	if (i + length < N)
+		Merge2(A, TmpA, i, i + length, N - 1);
+	else
+		for (j = i;j < N;j++)
+			TmpA[j] = A[j];
+}
+
+void Merge2_Sort(int A[], int N)
+{
+	int* TmpA;
+	int length = 1;
+	TmpA = (int*)malloc(N * sizeof(int));
+	if (TmpA != NULL) {
+		while (length < N) {
+			MPass(A, TmpA, N, length);
+			length *= 2;
+			MPass(TmpA, A, N, length);
+			length *= 2;
+		}
+		free(TmpA);
+	}
+	else printf("空间不足");
+}
