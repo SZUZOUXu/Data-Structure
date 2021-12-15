@@ -1,0 +1,63 @@
+#include<stdio.h>
+
+int MaxSubseqSum1(int A[], int N);//暴力算法
+int MaxSubseqSum2(int A[], int N);//改进了MaxSum
+int MaxSubseqSum4(int A[], int N);//最快的算法在线处理Sum3是分而治之的思想
+
+int main()
+{
+	int n, i;
+	scanf("%d", &n);
+	int a[n+1];//n+1
+	for (i = 0;i < n;i++) {
+		scanf("%d", &a[i]);
+	}
+	printf("%d", MaxSubseqSum4(a, n));
+	return 0;
+}
+
+int MaxSubseqSum1(int A[], int N)//T(N)=O（N^3）
+{
+	int ThisSum = 0, MaxSum = 0;
+	int i,j,k;
+	for (i = 0;i < N;i++) {//i是子列的左端
+		for (j = i;j < N;j++) {//j是子列的右端
+			ThisSum = 0;//重置ThisSum
+			for (k = i;k < j;k++) {//k用来在子列里找到最大值
+				ThisSum += A[k];
+			}
+			if (ThisSum > MaxSum)//更新MaxSum
+				MaxSum = ThisSum;
+		}
+	}
+	return MaxSum;
+}
+
+int MaxSubseqSum2(int A[], int N)//T(N)=O（N^2）
+{
+	int ThisSum = 0, MaxSum = 0;
+	int i, j, k;
+	for (i = 0;i < N;i++) {//i是子列的左端
+		ThisSum = 0;//更新左子列的时候重置ThisSum
+		for (j = i;j < N;j++) {//j是子列的右端
+			ThisSum += A[j];//改变ThisSum的值
+			if (ThisSum > MaxSum)//更新MaxSum
+				MaxSum = ThisSum;
+		}
+	}
+	return MaxSum;
+}
+
+int MaxSubseqSum4(int A[], int N)//T(N)=O（N）
+{
+	int ThisSum = 0, MaxSum = 0;
+	int i;
+	for (i = 0;i < N;i++) {
+		ThisSum += A[i];//向右累加
+		if (ThisSum > MaxSum)//如果发现更大的和，则更改MaxSum的值
+			MaxSum = ThisSum;
+		else if (ThisSum < 0)//当前子列和为负
+			ThisSum = 0;//不可能使之后的子列和更大，因此抛弃
+	}
+	return MaxSum;
+}
