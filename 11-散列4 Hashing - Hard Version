@@ -1,0 +1,212 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+#define MaxVertexNum 1000
+
+/*边*/
+typedef struct ENode* PtrToENode;
+struct ENode {
+    int V1, V2;
+};
+typedef PtrToENode Edge;
+/*结点*/
+typedef struct AdjVNode* PtrToAdjVNode;
+struct AdjVNode {
+    int AdjV;
+    PtrToAdjVNode Next;
+};
+/*头结点*/
+typedef struct VNode {
+    int Data; /*-1表示顶点不存在*/
+    int indegree;/*入度，不存在时为-1*/
+    PtrToAdjVNode FirstEdge;/*边表头结点*/
+} AdjList[MaxVertexNum];
+/*图结点*/
+typedef struct GNode* PtrToGNode;
+struct GNode {
+    int Nv;     /* 顶点数 */
+    AdjList G;  /* 邻接表 */
+};
+typedef PtrToGNode LGraph;
+/*堆*/
+typedef struct HNode* Heap; /* 堆的类型定义 */
+struct HNode {
+    int * Data; /* 存储元素的数组，Data[0]存储元素个数 */
+    int Capacity;      /* 堆的最大容量 */
+};
+typedef Heap MinHeap;
+LGraph CreateGraph(int VertexNum);
+void InsertEdge(LGraph Graph, Edge E);
+LGraph BuildGraph();
+void handleAndPrint(LGraph graph);
+int DeleteMin(LGraph graph, MinHeap H);
+bool IsEmpty(MinHeap H);
+bool Insert(LGraph graph, MinHeap H, int X);
+bool IsFull(MinHeap H);
+void DestoryHeap(MinHeap heap);
+MinHeap CreateHeap(int MaxSize);
+void DestoryGraph(LGraph Graph);
+
+int main()
+{
+    LGraph Graph;
+    Graph = BuildGraph();
+    handleAndPrint(Graph);
+    DestoryGraph(Graph);
+
+    return 0;
+}
+
+LGraph CreateGraph(int VertexNum)
+{
+    int i;
+    LGraph Graph;
+    Graph = (LGraph)malloc(sizeof(struct GNode));
+    Graph->Nv = VertexNum;
+
+    for (i = 0;i < Graph->Nv;i++) {
+        Graph->G[i].Data = -1;
+        Graph->G[i].indegree = -1;
+        Graph->G[i].FirstEdge = NULL;
+    }
+    return Graph;
+}
+
+LGraph BuildGraph()
+{
+    int i, j;
+    int N;
+    Edge E;
+    LGraph Graph;
+
+    E = (Edge)malloc(sizeof(struct ENode));
+    scanf("%d", &N);
+    Graph = CreateGraph(N);
+    for (i = 0; i < N; ++i) {
+        scanf("%d", &(Graph->G[i].Data));
+        if (Graph->G[i].Data < 0) continue;/*没有存数值则跳过该次*/
+        j = Graph->G[i].Data % Graph->Nv;/*哈希函数计算后的值*/
+        Graph->G[i].indegree = (i - j + Graph->Nv) % Graph->Nv;/*计算入度*/
+        while (j != i) {
+            E->V1 = j; E->V2 = i;
+            InsertEdge(Graph, E);/*G[E->V1].FirstEdge*/
+            j = (j + 1) % Graph->Nv;
+        }
+    }
+    free(E);
+    return Graph;
+}
+
+void InsertEdge( LGraph Graph, Edge E )
+{
+    PtrToAdjVNode NewNode;
+
+    /* 插入边 <V1, V2> */
+    /* 为V2建立新的邻接点 */
+    NewNode = (PtrToAdjVNode)malloc(sizeof(struct AdjVNode));
+    NewNode->AdjV = E->V2;
+    /* 将V2插入V1的表头 */
+    NewNode->Next = Graph->G[E->V1].FirstEdge;
+    Graph->G[E->V1].FirstEdge = NewNode;
+}
+
+void handleAndPrint(LGraph graph)
+{
+    MinHeap heap;
+    int i, pos;
+    PtrToAdjVNode tmp;
+    bool isFirst;
+    heap = CreateHeap(graph->Nv);
+    isFirst = true;
+    for (i = 0; i < graph->Nv; ++i) {   // 将入度为0的结点放入堆中
+        if (graph->G[i].indegree == 0)
+            Insert(graph, heap, i);
+    }
+    while (!IsEmpty(heap)) {    // 进行拓扑排序，使用堆（即优先队列）来代替一般队列
+        pos = DeleteMin(graph, heap);/*最小堆中最小的元素*/
+        tmp = graph->G[pos].FirstEdge;
+        while (tmp) {
+            if (--(graph->G[tmp->AdjV].indegree) == 0)
+                Insert(graph, heap, tmp->AdjV);
+            tmp = tmp->Next;
+        }
+        if (isFirst) isFirst = false;
+        else printf(" ");
+        printf("%d", graph->G[pos].Data);
+    }
+    DestoryHeap(heap);
+}
+
+MinHeap CreateHeap(int MaxSize)
+{
+    MinHeap H = (MinHeap)malloc(sizeof(struct HNode));
+    H->Data = (int*)malloc((MaxSize + 1) * sizeof(int));
+    H->Data[0] = 0;
+    H->Capacity = MaxSize;
+
+    return H;
+}
+
+void DestoryHeap(MinHeap heap)
+{
+    free(heap->Data);
+    free(heap);
+}
+
+bool IsFull(MinHeap H)
+{
+    return (H->Data[0] == H->Capacity);
+}
+
+bool Insert(LGraph graph, MinHeap H, int X)
+{
+    int i;
+
+    if (IsFull(H)) return false;
+    i = ++(H->Data[0]); /* i指向插入后堆中的最后一个元素的位置 */
+    for (; (i / 2 > 0) && graph->G[H->Data[i / 2]].Data > graph->G[X].Data; i /= 2)
+        H->Data[i] = H->Data[i / 2]; /* 最小堆，向上过滤X */
+    H->Data[i] = X; /* 将X插入 */
+    return true;
+}
+bool IsEmpty(MinHeap H)
+{
+    return (H->Data[0] == 0);
+}
+int DeleteMin(LGraph graph, MinHeap H)
+{
+    int Parent, Child;
+    int MinItem, X;
+
+    if (IsEmpty(H)) return -1;
+
+    MinItem = H->Data[1]; /* 取出根结点存放的最小值 */
+    /* 用最小堆中最后一个元素从根结点开始向上过滤下层结点 */
+    X = H->Data[H->Data[0]--]; /* 注意当前堆的规模要减小 */
+    for (Parent = 1; Parent * 2 <= H->Data[0]; Parent = Child) {
+        Child = Parent * 2;
+        if ((Child != H->Data[0]) && (graph->G[H->Data[Child]].Data > graph->G[H->Data[Child + 1]].Data))
+            Child++;  /* Child指向左右子结点的较小者 */
+        if (graph->G[X].Data <= graph->G[H->Data[Child]].Data) break; /* 找到了合适位置 */
+        else  /* 下滤X */
+            H->Data[Parent] = H->Data[Child];
+    }
+    H->Data[Parent] = X;
+
+    return MinItem;
+}
+
+void DestoryGraph(LGraph Graph)
+{
+    int V;
+    PtrToAdjVNode Node;
+    for (V = 0; V < Graph->Nv; ++V) {
+        while (Graph->G[V].FirstEdge) {
+            Node = Graph->G[V].FirstEdge;
+            Graph->G[V].FirstEdge = Node->Next;
+            free(Node);
+        }
+    }
+    free(Graph);
+}
