@@ -1,0 +1,85 @@
+#include<stdio.h>
+#include<stdlib.h>
+typedef struct _List* List;
+struct _List {
+	int* pre;
+	int* in;
+	int* post;
+	int Num;
+};
+List Read();
+void PostOrder(List L, int H_pre, int H_in, int position_post, int num);
+
+int main()
+{
+	List L = Read();
+	PostOrder(L, 0, 0, L->Num - 1, L->Num);
+	int i = 0;
+	/*对于post打印输出*/
+	for (i = 0;i < L->Num;i++) {
+		if (i != 0) {
+			printf(" ");
+		}
+		printf("%d", L->post[i]);
+	}
+	return 0;
+}
+
+List Read()
+{
+	List L = (List)malloc(sizeof(struct _List));/*分配空间*/
+	scanf("%d", &(L->Num));
+	/*为三个指针分配Num个的空间*/
+	L->pre = (int*)malloc(sizeof(int) * (L->Num));
+	L->in = (int*)malloc(sizeof(int) * (L->Num));
+	L->post = (int*)malloc(sizeof(int) * (L->Num));
+	int i = 0, count_pre = 0, count_in = 0;
+	char s[4];/*存储输入的字符*/
+	int d = 0;
+
+	int stack[30], top = 0;
+
+	for (i = 0;i < 2 * (L->Num);i++) {
+		scanf("%s", s);
+		if (s[1] == 'u') {
+			/*push*/
+			scanf("%d", &d);
+			L->pre[count_pre++] = d;/*前序遍历（）*/
+			stack[++top] = d;/*将d入栈*/
+		}
+		else {
+			/*pop*/
+			L->in[count_in++] = stack[top--];/*将d出栈，中序遍历*/
+		}
+	}
+	return L;
+}
+
+void PostOrder(List L, int H_pre, int H_in, int position_post, int num)
+{
+	/*0 0 5 6*/
+	if (num == 0)
+		return;
+	if (num == 1) {/*一个结点*/
+		/*num-1 post[0]=pre[0]*/
+		L->post[position_post] = L->pre[H_pre];
+		return;
+	}
+	int root = L->pre[H_pre];/*前序第一个结点就是根节点*/
+	L->post[position_post] = root;/*后序的最后一个结点就是根节点*/
+	int i = H_in;/*i=0*/
+	/*左子树，对于中序遍历到根节点之前就是左子树*/
+	for (;i < H_in + num;i++) {
+		if (L->in[i] == root) {
+			break;
+		}
+	}
+	int root_in = i;/*中序遍历第几个是根*/
+	int lnum = root_in - H_in;/*左子树长度*/
+	int l_position_post = position_post - (num - lnum);/*右子树长度*/
+	int r_position_post = position_post - 1;
+
+	PostOrder(L, H_pre + 1, H_in, l_position_post, lnum);
+
+	PostOrder(L, H_pre + 1 + lnum, root_in + 1, r_position_post, num - lnum - 1);
+}
