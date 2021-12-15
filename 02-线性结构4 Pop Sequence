@@ -1,0 +1,43 @@
+#include<stdio.h>
+#include<stdlib.h>
+
+int main()
+{
+	int M, N, K;
+	scanf("%d %d %d", &M, &N, &K);
+	int a[1001];
+	int i,j;
+	for(i=0;i<K;i++){/*一共有K个栈*/
+		for (j = 0;j < N;j++) {/*输入栈*/
+			scanf("%d", &a[j]);
+		}
+		int stack[1000] = { 0 }, top = 0;//创建一个栈
+		int num = 1;
+		stack[0] = num;
+		j = 0;
+		while (j < N) {/*N=7，j是栈的里个数*/
+			/*3 2 1 7 5 6 4 a[4]=5<stack[top]=6*/
+			if (a[j] < stack[top])/*比栈顶元素小*/
+				break;
+			/*5 6 4 3 7 2 1为例，a[0]=5比1大*/
+			while (a[j] > stack[top]) {  //需要继续压入数据 
+				/*一直到stack[1 2 3 4 5],删除了5输入了6*/
+				stack[++top] = ++num;
+			}
+			if (top >= M)
+				break;/*逸出了属于是*/
+			if (a[j] == stack[top]) {
+				top--;/*top指针向下走一个*/
+			}
+			if (top < 0) {
+				stack[++top] = ++num;/*输入数据*/
+			}
+			j++;
+		}
+		if (j == N)
+			printf("YES\n");
+		else 
+			printf("NO\n");
+	}
+	return 0;
+}
