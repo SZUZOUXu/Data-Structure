@@ -1,0 +1,116 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<math.h>
+#include<stdbool.h>
+
+#define MaxSize 100000
+typedef enum { Legitimate, Empty, Deleted } EntryType;
+typedef struct HashEntry* Cell;
+struct HashEntry {
+	int Data;/*元素*/
+	EntryType Info;/*单元状态*/
+};
+
+typedef struct TblNode* HashTable;
+struct TblNode {
+	Cell Cells;
+	int TableSize;
+};
+
+HashTable CreateTable(int N);
+int Hash(int Key, int TableSize);
+int Insert(HashTable H, int Key);
+int NextPrime(int N);
+int Find(HashTable H, int Key);
+
+int main()
+{
+	int N, M;
+	int i,Key,Pos;
+	HashTable H;
+	scanf("%d %d", &N, &M);
+	H = CreateTable(N);
+	for (i = 0;i < M;i++) {
+		scanf("%d", &Key);
+		Pos = Insert(H, Key);
+		if (i != 0) printf(" ");
+		if (Pos == -1)
+			printf("-");
+		else
+			printf("%d", Pos);
+	}
+    
+	return 0;
+}
+
+HashTable CreateTable(int N)
+{
+	HashTable H;
+	int i;
+	H = (HashTable)malloc(sizeof(struct TblNode));
+	H->TableSize = NextPrime(N);
+	H->Cells = (Cell)malloc(H->TableSize*sizeof(struct HashEntry));
+	
+	for (i = 0;i < H->TableSize;i++) {
+		H->Cells[i].Info = Empty;/*初始化为空单元*/
+	}
+	return H;
+}
+
+int Hash(int Key, int TableSize)
+{
+	return Key % TableSize;
+}
+
+int Insert(HashTable H, int Key)
+{
+	int Pos = Find(H, Key); /* 先检查Key是否已经存在 */
+	if (H->Cells[Pos].Info != Legitimate) { /* 如果这个单元没有被占，说明Key可以插入在此 */
+		H->Cells[Pos].Info = Legitimate;
+		H->Cells[Pos].Data = Key;
+		/*字符串类型的关键词需要 strcpy 函数!! */
+		return Pos;
+	}
+	else {
+		return -1;
+	}
+}
+
+int NextPrime(int N)
+{
+	int i;
+    if(N<2)
+        return 2;
+	int p = (N % 2) ? N + 2 : N + 1;/*下一个奇数*/
+	while (p <= MaxSize) {
+		for (i = (int)sqrt(p);i > 2;i--) {
+			if (p % i == 0)
+				break;
+		}
+		if (i == 2)
+			break;
+        else
+		    p += 2;
+	}
+	return p;
+}
+
+int Find(HashTable H, int Key)
+{
+	int CurrentPos, NewPos;
+	int CNum = 0; /* 记录冲突次数 */
+
+	NewPos = CurrentPos = Hash(Key, H->TableSize); /* 初始散列位置 */
+	/* 当该位置的单元非空，并且不是要找的元素时，发生冲突 */
+	while (H->Cells[NewPos].Info != Empty && H->Cells[NewPos].Data != Key) {
+		/* 字符串类型的关键词需要 strcmp 函数!! */
+		NewPos = CurrentPos + (CNum + 1) * (CNum + 1);
+		if (NewPos >= H->TableSize) {
+			NewPos = NewPos % H->TableSize; /* 调整为合法地址 */
+			if (NewPos == CurrentPos)
+				break;
+		}
+		++CNum;
+	}
+	return NewPos;/* 此时NewPos是Key的位置，或者是一个空单元的位置（表示找不到）*/
+}
