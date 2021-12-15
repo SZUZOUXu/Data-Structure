@@ -1,0 +1,134 @@
+#include<stdio.h>
+#include<stdlib.h>
+
+/*搜索树的表示*/
+typedef struct TreeNode* BinTree;
+struct TreeNode {
+	int v;
+	BinTree left, right;
+	int flag;/*判断是不是一致的*/
+};
+
+BinTree MakeTree(int N);
+BinTree NewNode(int V);
+BinTree Insert(BinTree T, int V);
+int check(BinTree T, int V);
+int Judge(BinTree T, int N);
+void ResetT(BinTree T);
+void FreeTree(BinTree T);
+
+int main()
+{
+	int N, L, i;
+	BinTree T;
+	scanf("%d", &N);
+	while (N) {/*N=0结束*/
+		scanf("%d", &L);
+		T = MakeTree(N);/*输入的初始插入序列*/
+		for (i = 0;i < L;i++) {
+			if (Judge(T, N))
+				printf("Yes\n");
+			else
+				printf("No\n");
+			ResetT(T);/*清除Tree中的flag*/
+		}
+		FreeTree(T);
+		scanf("%d", &N);
+	}
+
+	return 0;
+}
+BinTree MakeTree(int N)
+{/*共计N个元素*/
+	BinTree T;
+	int i, V;
+	scanf("%d", &V);
+	T = NewNode(V);
+	for (i = 1;i < N;i++) {
+		scanf("%d", &V);
+		T = Insert(T, V);
+	}
+	return T;/*返回头指针*/
+}
+
+BinTree NewNode(int V)
+{
+	BinTree T;
+	T = (BinTree)malloc(sizeof(struct TreeNode));
+	T->v = V;
+	T->left = T->right = NULL;
+	T->flag = 0;/*没被访问过就设置为0*/
+	return T;
+}
+
+BinTree Insert(BinTree T, int V)
+{
+	if (!T)/*若为空，在该位置新建结点*/
+		T = NewNode(V);
+	else if (V < T->v)
+		T->left = Insert(T->left, V);
+	else if (V > T->v)
+		T->right = Insert(T->right, V);
+	return T;
+}
+
+int check(BinTree T, int V)/*在T里找整数V，查找过程发现是不是一致的*/
+{
+	/*访问过的flag值为1，若查找过程中发现flag=0，则说明不一致*/
+	if (T->flag) {/*根结点的flag=1*/
+		if (V < T->v)
+			return check(T->left, V);
+		else if (V > T->v)
+			return check(T->right, V);
+		else return 0;/*说明有两个一样的值*/
+	}
+	else/*当前结点没有被访问过*/
+	{
+		if (V == T->v) {
+			T->flag = 1;
+			return 1;
+		}
+		else
+			return 0;
+	}
+}
+
+int Judge(BinTree T, int N)
+{
+	int i, V;
+	int flag = 0;/*0代表还一致，1代表不一致*/
+	scanf("%d", &V);
+	if (V != T->v)/*根节点不一样*/
+		flag = 1;
+	else T->flag = 1;
+	for (i = 1;i < N;i++) {
+		scanf("%d", &V);
+		if ((!flag)&&(!check(T, V))) {
+			flag=1;/*为了读完序列*/
+		}
+	}
+	if (flag)
+		return 0;
+	else
+		return 1;
+}
+
+void ResetT(BinTree T)
+{
+	/*清除T树里的flag印记*/
+	if (T->left)
+		ResetT(T->left);
+	if (T->right)
+		ResetT(T->right);
+	T->flag = 0;
+}
+
+void FreeTree(BinTree T)
+{
+	/*释放T树的空间*/
+	if (T->left)
+		FreeTree(T->left);
+	if (T->right)
+		FreeTree(T->right);
+	free(T);
+}
