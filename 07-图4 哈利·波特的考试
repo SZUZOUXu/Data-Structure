@@ -1,0 +1,129 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<stdbool.h>
+#define MaxSize 100
+#define INFINITY 165535
+
+typedef struct ENode* Edge;
+struct ENode {
+	int V1, V2;
+	int Weight;
+};
+typedef struct GNode* MGraph;
+struct GNode {
+	int Nv;
+	int Ne;
+	int G[MaxSize][MaxSize];
+};
+
+void FindAnimal(MGraph Graph);/*找到对应的动物*/
+int FindMaxDist(int D[][MaxSize], int i, int N);/*找到第i行最大的值*/
+MGraph CrateGraph(int VertexNum);/*建空图*/
+void InsertEdge(MGraph Graph, Edge E);/*插入边*/
+MGraph BuildGraph();/*建立图*/
+bool Floyd(MGraph Graph, int D[][MaxSize]);/*多源最短路径*/
+
+int main()
+{
+	MGraph Graph = BuildGraph();
+	FindAnimal(Graph);
+	return 0;
+}
+
+void FindAnimal(MGraph Graph)
+{
+	int D[MaxSize][MaxSize];
+	int i,MinDist,MaxDist, Animal;
+	Floyd(Graph, D);/*得到距离矩阵D*/
+	/*FindMin*/
+	MinDist = INFINITY;
+	for (i = 0;i < Graph->Nv;i++) {
+		MaxDist = FindMaxDist(D, i, Graph->Nv);/*在第i行找到最大值MaxDist*/
+		if (MaxDist == INFINITY) {/*说明有变不出来的动物捏*/
+			printf("0\n");
+			return;
+		}
+		if (MinDist > MaxDist) {/*找到最长距离更小的动物*/
+			MinDist = MaxDist;
+			Animal = i + 1;/*更新编号(动物从1开始)*/
+		}
+	}
+	printf("%d %d\n", Animal, MinDist);
+		
+}
+
+int FindMaxDist(int D[][MaxSize], int i, int N)
+{/*传入矩阵*/
+	int MaxDist=0, j;
+	for (j = 0;j < N;j++)
+		if (D[i][j] > MaxDist && i!=j)/*对角圆一直是无穷*/
+			MaxDist = D[i][j];
+
+	return MaxDist;
+}
+
+MGraph CrateGraph(int VertexNum)
+{
+	int V, W;
+	MGraph Graph;
+	Graph = (MGraph)malloc(sizeof(struct GNode));
+	Graph->Nv = VertexNum;
+	Graph->Ne = 0;
+	
+	for (V = 0;V < Graph->Nv;V++)
+		for (W = 0;W < Graph->Nv;W++)
+			Graph->G[V][W] = INFINITY;
+
+	return Graph;
+}
+
+void InsertEdge(MGraph Graph, Edge E)
+{
+	Graph->G[E->V1][E->V2] = E->Weight;
+	Graph->G[E->V2][E->V1] = E->Weight;
+}
+
+MGraph BuildGraph()
+{
+	int V, Nv, i;
+	MGraph Graph;
+	Edge E;
+
+	scanf("%d", &Nv);
+	Graph = CrateGraph(Nv);
+
+	scanf("%d", &Graph->Ne);
+	if (Graph->Ne != 0) {
+		E = (Edge)malloc(sizeof(struct ENode));
+
+		for (i = 0;i < Graph->Ne;i++) {
+			scanf("%d %d %d", &E->V1, &E->V2, &E->Weight);
+			E->V1--;/*编号从0开始*/
+			E->V2--;
+			InsertEdge(Graph, E);
+		}
+	}
+
+	return Graph;
+}
+
+bool Floyd(MGraph Graph, int D[][MaxSize])
+{
+	int i, j, k;
+	/*初始化*/
+	for (i = 0;i < Graph->Nv;i++)
+		for (j = 0;j < Graph->Nv;j++)
+			D[i][j] = Graph->G[i][j];
+
+	for(k=0;k<Graph->Nv;k++)
+		for (i = 0;i < Graph->Nv;i++)
+			for (j = 0;j < Graph->Nv;j++)
+				if (D[i][k] + D[k][j] < D[i][j]) {
+					D[i][j] = D[i][k] + D[k][j];
+					if (i == j && D[i][j] < 0)
+						/*负值圈，也就是说从i出发回到i的最短距离<0*/
+						return false;
+				}
+
+	return true;
+}
